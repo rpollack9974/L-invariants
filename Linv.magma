@@ -184,8 +184,9 @@ function Linv_twist(MS,p,d)
 	Lval:=lam_twist(MS,r,0,1,d);
 
 //	print "The answer is correct modulo p ^",Min(list)-r-Valuation(Lval,p);
+	err_bnd := Min(list)-r-Valuation(Lval,p);
 
-	return Lderiv/Lval;
+	return Lderiv/Lval,err_bnd;
 end function;
 
 function Linv(MS,p);
@@ -245,9 +246,9 @@ function Linv(MS,p);
 
 //	print "Will use d =",d;
 
-	Li:=Linv_twist(MS,p,d);
+	Li:=Linv_twist(MS,p,d),err_bnd;
 
-	return Li,f;
+	return Li,f,err_bnd;
 end function;
 
 function Linvs(N,p,k:verbose:=false)
@@ -257,7 +258,7 @@ function Linvs(N,p,k:verbose:=false)
 	ans:=[**];
 	for s in [1..#A] do
 		MS:=A[s][2];
-		time Li,f:=Linv(MS,p);	
+		time Li,f,err_bnd:=Linv(MS,p);	
 		K:=Parent(Li);
 		printf "%o: Degree(K)=%o; ",s,Degree(K);
 		if K ne Q then
@@ -270,8 +271,12 @@ function Linvs(N,p,k:verbose:=false)
 			end for;
 			printf "<%o,%o>; Linv vals: [",RamificationDegree(pp[#pp][1]),InertiaDegree(pp[#pp][1]);
 			for r in [1..#pp-1] do
-				printf "%o,",Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]);
+				for s in [1..RamificationDegree(pp[r][1])*InertiaDegree(pp[r][1])] do
+					printf "%o,",Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]);
+				end for;
 			end for;
+			for s in [1..RamificationDegree(pp[#pp][1])*InertiaDegree(pp[#pp][1])-1] do
+				printf "%o",Valuation(Li,pp[#pp][1])/RamificationDegree(pp[#pp][1]);	
 			printf "%o]\n",Valuation(Li,pp[#pp][1])/RamificationDegree(pp[#pp][1]);	
 		else
 				pp:=[[p]];
@@ -309,6 +314,9 @@ function Linvs(N,p,k:verbose:=false)
 			list:=[Valuation(Li,pp[r][1]) : r in [1..#pp]];
 		end if;
 
+		if Max(list) ge err_bnd then
+			print "ERROR BOUND VIOLATED!!!";
+		end if;
 		Append(~ans,list);
 	end for;
 
