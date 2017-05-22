@@ -283,7 +283,7 @@ function Linvs(N,p,k:verbose:=false)
 				end if;
 			end for;
 			for s in [1..RamificationDegree(pp[#pp][1])*InertiaDegree(pp[#pp][1])-1] do
-				printf "%o",Valuation(Li,pp[#pp][1])/RamificationDegree(pp[#pp][1]);	
+				printf "%o,",Valuation(Li,pp[#pp][1])/RamificationDegree(pp[#pp][1]);	
 			end for;
 			printf "%o]\n",Valuation(Li,pp[#pp][1])/RamificationDegree(pp[#pp][1]);	
 			if Valuation(Li*Lval,pp[#pp][1]) gt err_bnd then
@@ -325,15 +325,15 @@ function Linvs(N,p,k:verbose:=false)
 					v:=10000;
 				end if;
 				for s in [1..RamificationDegree(pp[r][1])*InertiaDegree(pp[r][1])] do
-					Append(~list,v);
+					Append(~list,Q!v);
 				end for;
 			end for;
 //			list:=[Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]) : r in [1..#pp]];
 		else
 			if Valuation(Li*Lval,p) gt err_bnd then
-				list := [10000];
+				list := [Q!10000];
 			else
-				list:=[Valuation(Li,pp[r][1]) : r in [1..#pp]];
+				list:=[Q!Valuation(Li,pp[r][1]) : r in [1..#pp]];
 			end if;
 		end if;
 
