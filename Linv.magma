@@ -256,7 +256,7 @@ function Linvs(N,p,k:verbose:=false)
 	ans:=[**];
 	for s in [1..#A] do
 		MS:=A[s][2];
-		Li,f:=Linv(MS,p);	
+		time Li,f:=Linv(MS,p);	
 		K:=Parent(Li);
 		printf "%o: Degree(K)=%o; ",s,Degree(K);
 		if K ne Q then
