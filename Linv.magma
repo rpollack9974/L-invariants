@@ -158,8 +158,11 @@ function Linv_twist(MS,p,d)
 		f:=f+(-1)^(j+1)/j*a^j;
 	end for;
 	f:=f*(a+1)^r;
-	list:=[Valuation(Coefficient(f,j),p)+j-r : j in [k+1..k+2*p^2]];
-
+	if p ne 2 then
+		list:=[Valuation(Coefficient(f,j),p)+j-r : j in [k+1..k+2*p^2]];
+	else
+		list:=[Valuation(Coefficient(f,j),p)+2*j-r : j in [k+1..k+2*p^2]];
+	end if;
 	R<T>:=PowerSeriesRing(Q,k+2);
 	f:=0;
 	for j in [1..k+1] do
@@ -292,7 +295,7 @@ function Linvs(N,p,k:verbose:=false)
 				printf "<e,f>'s: <1,1>";
 				printf "; Linv vals: [%o]\n",Valuation(Li,p);
 			if Valuation(Li*Lval,p) gt err_bnd then
-				print "ERROR BOUND VIOLATED!!";
+				print "ERROR BOUND VIOLATED!!",Valuation(Li,p),Valuation(Lval,p),err_bnd;
 				print "****************************************************************";
 			end if;
 		end if;
