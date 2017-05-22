@@ -84,7 +84,7 @@ function find_padic_forms(N,k,p,sgn)
 		f:=qEigenform(A,20); 
 		if Dimension(A) gt 1 then
 		        r:=1;
-			Kf:=NumberField(Modulus(Parent(Coefficient(f,2)))); 
+			Kf:=Parent(Coefficient(f,2));
 			A:=BaseExtend(A,Kf);
 			R<x>:=PolynomialRing(Kf);
 		        while Dimension(A) gt 1 do

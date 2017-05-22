@@ -149,19 +149,20 @@ function Linv_twist(MS,p,d)
 	
 //	print "forming moments";
 	mu:=form_moments_twist(MS,p,alpha*KroneckerSymbol(d,p),d);
+//	print mu;
 //	print " done";	
 
-	A<a>:=PowerSeriesRing(Q,k+10);
+	A<a>:=PowerSeriesRing(Q,k+2*p^2+1);
 	f:=0;
-	for j in [1..k+10] do
+	for j in [1..k+2*p^2] do
 		f:=f+(-1)^(j+1)/j*a^j;
 	end for;
 	f:=f*(a+1)^r;
-	list:=[Valuation(Coefficient(f,j),p)+j-r : j in [k+1..k+9]];
+	list:=[Valuation(Coefficient(f,j),p)+j-r : j in [k+1..k+2*p^2]];
 
-	R<T>:=PowerSeriesRing(Q,k+1);
+	R<T>:=PowerSeriesRing(Q,k+2);
 	f:=0;
-	for j in [1..k] do
+	for j in [1..k+1] do
 		f:=f+(-1)^(j+1)/j*T^j;
 	end for;
 	f:=f*(T+1)^r;
@@ -171,7 +172,7 @@ function Linv_twist(MS,p,d)
 		Poly<zz>:=PolynomialRing(Qp);   
         
 		v:=Roots(zz^(p-1)-1);
-		Teich:=[Q!v[r][1] : r in [1..p-1]];
+		Teich:=[Q!v[s][1] : s in [1..p-1]];
 	end if;
 
 	if p ne 2 then
@@ -305,7 +306,7 @@ function Linvs(N,p,k:verbose:=false)
 			end for;
 //			list:=[Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]) : r in [1..#pp]];
 		else
-			list:=[Q!Valuation(Li,pp[r][1]) : r in [1..#pp]];
+			list:=[Valuation(Li,pp[r][1]) : r in [1..#pp]];
 		end if;
 
 		Append(~ans,list);
