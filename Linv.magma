@@ -1,0 +1,339 @@
+load "modsyms.magma";
+
+Sym<X,Y>:=PolynomialRing(Q,2);
+
+function decomp_type(pp)
+        return [<InertiaDegree(pp[r][1]),RamificationDegree(pp[r][1])> : r in [1..#pp]];
+end function;
+
+//-------------------------------------------------------------------------
+// integrate_power(a,j,mu)
+//
+// Input:
+//	a,j = integers
+//	mu = collection of moments
+//
+// Output:
+//	int_{a+pZ_p} (<x> - 1)^j d\mu   (<x> is x/teich(x))
+//-------------------------------------------------------------------------
+function integrate_power(a,j,mu,teich)
+	ans :=0;
+
+	for r in [0..j] do
+		ans := ans + Binomial(j,r)*(-teich[a])^(j-r)*mu[a,r+1];
+	end for;
+
+	return teich[a]^(-j)*ans;
+end function;
+
+//p=2
+function integrate_power2(a,j,mu)
+	ans :=0;
+
+	for r in [0..j] do
+		if a eq 1 then
+			b:=1;
+		else
+			b:=2;
+		end if;
+		ans := ans + Binomial(j,r)*(-a)^(j-r)*mu[b,r+1];
+	end for;
+
+	return a^(-j)*ans;
+end function;
+
+//-------------------------------------------------------------------------
+// integrate_powerseries
+// 
+// Input:
+//      P = P(y) = P(<x>-1)
+//      mu = collection of moments
+// 
+// Output:
+//      Returns int_{Z_p^*} w(x)^i P(<x>-1)
+//-------------------------------------------------------------------------
+function integrate_powerseries(P,mu,i,teich)
+	ans:=0;
+	for j in [0..#mu[1]-1] do
+		for a in [1..#teich] do
+			temp:=integrate_power(a,j,mu,teich)*Coefficient(P,j)*teich[a]^i;
+			ans:=ans+temp;
+		end for;
+	end for;
+
+	return ans;
+end function;
+
+//p=2
+function integrate_powerseries2(P,mu,i)
+	ans:=0;
+	for j in [0..#mu[1]-1] do
+		for a in [1,-1] do
+			temp:=integrate_power2(a,j,mu)*Coefficient(P,j)*a^i;
+			ans:=ans+temp;
+		end for;
+	end for;
+
+	return ans;
+end function;
+
+function modularpath(MS,P,rat)
+        return((MS!<P,[Cusps()|Infinity(),rat]>)`element);
+end function;
+                               
+//Rho=Phi
+function Rho(MS,P,rat)
+	f:=DualVectorSpace(MS).1;
+        return(InnerProduct(f,modularpath(MS,P,rat)));
+end function;
+
+function lam(MS,j,a,m)
+	k:=Weight(MS)-2;
+	ans:=0;
+	for r in [0..j] do
+		ans:=ans+Binomial(j,r)*m^r*a^(j-r)*Rho(MS,X^r*Y^(k-r),-a/m);
+	end for;
+
+	return ans;
+end function;
+
+
+function lam_twist(MS,j,b,n,D)
+        ans:=0;
+        for a in [1..AbsoluteValue(D)] do
+                if Gcd(D,a) eq 1 then
+                        ans:=ans+KroneckerSymbol(D,a)*lam(MS,j,D*b-n*a,D*n);
+                end if;
+        end for;
+
+        ans:=D^(-j)*ans;
+
+        return ans;
+end function;
+
+function form_moments_twist(MS,p,alpha,d)
+        error if (d ne 1) and (not IsFundamentalDiscriminant(d)), "Not good discriminant";
+	error if Valuation(Level(MS),p) ne 1, "prime doesn't exactly divide level";
+
+	k:=Weight(MS)-2;
+
+        Moments:=[];
+	if p ne 2 then
+	        for a in [1..p-1] do
+	//		print "  beginning ",a,"out of",p-1;
+	                row:=[];
+	                for j in [0..k] do
+				ans:=1/(alpha*KroneckerSymbol(d,p))*lam_twist(MS,j,a,p,d);
+	                        Append(~row,ans);
+	                end for;
+	                Append(~Moments,row);
+	        end for;
+	else
+	        for a in [1,-1] do
+	                row:=[];
+	                for j in [0..k] do
+				ans:=1/alpha^2*lam_twist(MS,j,a,4,d);
+	                        Append(~row,ans);
+	                end for;
+	                Append(~Moments,row);
+	        end for;
+	end if;
+
+	return Moments;
+end function;
+
+function Linv_twist(MS,p,d)
+	k:=Weight(MS)-2;
+	r:=k div 2;
+	alpha:=Coefficient(qEigenform(MS,p+1),p);
+	
+//	print "forming moments";
+	mu:=form_moments_twist(MS,p,alpha*KroneckerSymbol(d,p),d);
+//	print " done";	
+
+	A<a>:=PowerSeriesRing(Q,k+10);
+	f:=0;
+	for j in [1..k+10] do
+		f:=f+(-1)^(j+1)/j*a^j;
+	end for;
+	f:=f*(a+1)^r;
+	list:=[Valuation(Coefficient(f,j),p)+j-r : j in [k+1..k+9]];
+
+	R<T>:=PowerSeriesRing(Q,k+1);
+	f:=0;
+	for j in [1..k] do
+		f:=f+(-1)^(j+1)/j*T^j;
+	end for;
+	f:=f*(T+1)^r;
+
+	if p ne 2 then
+		Qp:=pAdicRing(p,20);
+		Poly<zz>:=PolynomialRing(Qp);   
+        
+		v:=Roots(zz^(p-1)-1);
+		Teich:=[Q!v[r][1] : r in [1..p-1]];
+	end if;
+
+	if p ne 2 then
+		Lderiv:=integrate_powerseries(f,mu,r mod (p-1),Teich);
+	else
+		Lderiv:=integrate_powerseries2(f,mu,r mod 2);
+	end if;
+
+	Lval:=lam_twist(MS,r,0,1,d);
+
+//	print "The answer is correct modulo p ^",Min(list)-r-Valuation(Lval,p);
+
+	return Lderiv/Lval;
+end function;
+
+function Linv(MS,p);
+	k:=Weight(MS)-2;
+	r:=k div 2;
+//	print "Forming q-expansion...";
+	f:=qEigenform(MS,p+1);
+	alpha:=Coefficient(f,p);
+
+//	print "Finding appropriate twist to use...";
+	d:=0;
+	found:=false;
+
+	while (not found) and (d lt 30) do
+		d:=d+1;
+//		print " trying d =",d;
+		if IsFundamentalDiscriminant(d) or d eq 1 then
+			if d mod p ne 0 then
+				if alpha/p^r eq KroneckerSymbol(d,p) then
+					if lam_twist(MS,r,0,1,d) ne 0 then
+						found:=true;
+					else
+//						print "  lam_twist vanishes";
+					end if;
+				else
+//					print "  sign wrong";
+				end if;
+			else
+//				print "  divisible by p";
+			end if;
+		else
+//			print "  not fundamental";
+		end if;
+		
+		if not found then 	
+//			print " trying d =",-d;
+			if IsFundamentalDiscriminant(-d) then
+				if d mod p ne 0 then
+					if alpha/p^r eq KroneckerSymbol(-d,p) then
+						if lam_twist(MS,r,0,1,-d) ne 0 then
+							found:=true;
+							d:=-d;
+						else
+//							print "  lam_twist vanishes";
+						end if;
+					else
+//						print "  sign wrong";
+					end if;
+				else
+//					print "  divisible by p";
+				end if;
+			else
+//				print "  not fundamental";
+			end if;
+		end if;
+	end while;
+
+//	print "Will use d =",d;
+
+	Li:=Linv_twist(MS,p,d);
+
+	return Li,f;
+end function;
+
+function Linvs(N,p,k:verbose:=false)
+	printf "Working at level N=%o, p=%o, and weight k=%o...\n",N,p,k;
+	time A:=find_padic_forms(N,k,p,1);
+	printf "...there are %o newforms (up to Galois)\n",#A;
+	ans:=[**];
+	for s in [1..#A] do
+		MS:=A[s][2];
+		Li,f:=Linv(MS,p);	
+		K:=Parent(Li);
+		printf "%o: Degree(K)=%o; ",s,Degree(K);
+		if K ne Q then
+			O:=EquationOrder(K);
+			Op:=pMaximalOrder(O,p);
+			pp:=Decomposition(Op,p);
+			printf "<e,f>'s: ",p;
+			for r in [1..#pp-1] do
+				printf "<%o,%o>,",RamificationDegree(pp[r][1]),InertiaDegree(pp[r][1]);
+			end for;
+			printf "<%o,%o>; Linv vals: [",RamificationDegree(pp[#pp][1]),InertiaDegree(pp[#pp][1]);
+			for r in [1..#pp-1] do
+				printf "%o,",Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]);
+			end for;
+			printf "%o]\n",Valuation(Li,pp[#pp][1])/RamificationDegree(pp[#pp][1]);	
+		else
+				pp:=[[p]];
+				printf "<e,f>'s: <1,1>";
+				printf "; Linv vals: [%o]\n",Valuation(Li,p);
+		end if;
+		if verbose then
+			for r in [1..#pp] do
+				if AbsolutePrecision(f) lt 30 then
+					f:=qEigenform(MS,30);
+				end if;
+				primes:=[2,3,5,7,11,13,17,19,23,29];
+				if K ne Q then
+					Fv,pi:=ResidueClassField(Op,pp[r][1]);
+					fc:=[pi(transform_helper(Coefficient(f,primes[a]),K)) : a in [1..#primes]];
+					e:=RamificationDegree(pp[r][1]);
+				else
+					fc:=[Z!Coefficient(f,primes[a]) mod p : a in [1..#primes]];
+					e:=1;
+				end if;
+				printf "  %o: Fourier %o; Li %o\n",r,fc,Valuation(Li,pp[r][1])/e;	
+			end for;
+		end if;
+
+		if K ne Q then
+			list:=[];
+			for r in [1..#pp] do
+				v:=Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]);
+				for s in [1..RamificationDegree(pp[r][1])*InertiaDegree(pp[r][1])] do
+					Append(~list,v);
+				end for;
+			end for;
+//			list:=[Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]) : r in [1..#pp]];
+		else
+			list:=[Q!Valuation(Li,pp[r][1]) : r in [1..#pp]];
+		end if;
+
+		Append(~ans,list);
+	end for;
+
+	ans_total:=[];
+	for r in [1..#ans] do
+		for s in [1..#ans[r]] do
+			Append(~ans_total,ans[r][s]);
+		end for;
+	end for;
+
+	if #ans_total gt 0 then
+		sorted:=Reverse(Sort(ans_total));
+		printf "Full list of Linv vals: %o\n\n",sorted;
+	end if;
+			
+	return Reverse(Sort(ans_total)),ans;
+end function;
+
+function compute_Linvariants(N,p,kmin,kmax)
+	for k in [kmin..kmax] do
+		if k mod 2 eq 0 then
+			a:=Linvs(N,p,k:verbose:=true);
+			filename:="DATA/Li." cat IntegerToString(N) cat "." cat IntegerToString(p);
+			SetOutputFile(filename);
+			printf "k=%o: %o\n",k,a;
+			UnsetOutputFile();
+		end if;
+	end for;
+end function;

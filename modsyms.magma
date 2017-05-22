@@ -1,0 +1,150 @@
+Z:=Integers();
+Q:=Rationals();
+
+function int(g,Op,pp,p)
+        for a in [0..p-1] do
+                if Valuation(Op!g-a,pp) gt 0 then
+                        return a;
+                end if;
+        end for;
+end function;
+
+function FC_res(hecke,Op,pp,p)
+        ans := [];
+        Omodp:=quo<Op|pp>;
+        D:=Degree(FieldOfFractions(Op),Q);
+        if D gt 1 then
+                pi:=UniformizingElement(pp);
+        else
+                pi:=p;
+        end if;
+        for r in [1..#hecke] do
+                aq:=hecke[r];
+                aqn:=Op!Numerator(aq);
+                aqd:=Op!Denominator(aq);
+                if Valuation(aqn,pp) gt Valuation(aqd,pp) then
+                        Append(~ans,Omodp!0);
+                else  
+                        v:=Max(Valuation(aqn,pp),Valuation(aqd,pp));
+                        QT:=quo<Op|pp^(v+1)>;
+                        rat:=(QT!aqn)/(QT!aqd);
+//                      e:=Valuation(aqd,pp);
+//                      aqn:=aqn/pi^e;
+//                      aqd:=aqd/pi^e;
+//                      Append(~ans,(Omodp!aqn)/(Omodp!aqd));
+//              end if;
+                        Append(~ans,Omodp!rat);
+                end if;
+        end for;
+
+        cont:=true;
+        for r in [1..#ans] do 
+                if ans[r]^p ne ans[r] then
+                        cont:=false;
+                end if;
+        end for;
+                
+                
+        if cont then
+                ans2:=[int(ans[r],Op,pp,p) : r in [1..#ans]];
+                return [*ans,ans2*];
+        else
+                return [*ans*];
+        end if;
+end function;
+  
+
+//goes from an element in Q[x]/f(x) to an element in a number field (internal MAGMA distinction)
+function transform_helper(a,Kf)
+        list:=Eltseq(a);
+        ans:=0;
+        for i in [1..#list] do
+                ans:=ans+list[i]*Kf.1^(i-1);
+        end for;
+                        
+        return ans; 
+end function;
+
+function find_padic_forms(N,k,p,sgn)
+	primes:=[q : q in [1..13] | IsPrime(q)];
+//	printf "Forming modular symbols of level %o, weight %o and sign %o...\n   ",N,k,sgn;
+//	time M := CuspidalSubspace(ModularSymbols(N,k,sgn));
+	M := CuspidalSubspace(ModularSymbols(N,k,sgn));
+//	printf "Decomposing into newforms...\n   ";
+//	time Nw := NewformDecomposition(NewSubspace(M));
+	Nw := NewformDecomposition(NewSubspace(M));
+	L := [* *];
+//	printf "There are %o newforms.\n",#Nw;
+	t:=Cputime();
+	for j in [1..#Nw] do
+//		printf "Breaking apart Galois conjugates of the %o-th\n",j;
+		A := Nw[j];
+//		printf " Computing q-expansion\n";
+//		time f:=qEigenform(A,20); 
+		f:=qEigenform(A,20); 
+		if Dimension(A) gt 1 then
+		        r:=1;
+			Kf:=NumberField(Modulus(Parent(Coefficient(f,2)))); 
+			A:=BaseExtend(A,Kf);
+			R<x>:=PolynomialRing(Kf);
+		        while Dimension(A) gt 1 do
+//				printf "  Taking kernels\n";
+				q:=primes[r];
+				aq:=transform_helper(Coefficient(f,q),Kf);
+		                I:=[<q,x-aq>];
+		                A:=Kernel(I,A);
+				r:=r+1;
+		        end while;
+		end if;
+
+//		printf " Decomposing %o\n",p;
+		Kf:=BaseField(A);
+		if Degree(Kf) ne 1 then
+			Of:=EquationOrder(Kf);
+			Op:=pMaximalOrder(Of,p);
+			decomp:=Decomposition(Op,p);
+		else
+			Op:=Z;
+			decomp:=[*[*ideal<Z|p>,1*]*];
+		end if;
+		r:=#decomp;
+
+//		printf "  There are %o distinct %o-adic embeddings\n",r,p;
+		hecke:=[transform_helper(Coefficient(f,q),Kf) : q in primes];
+//		prime_data:=[**];
+//		for j in [1..r] do
+//			printf "    Working on the %o-th\n",j;
+//			pp:=decomp[j][1];
+//			e:=decomp[j][2];
+//			ap:=transform_helper(Coefficient(f,p),Kf);
+//			slope := Valuation(ap,pp)/e;
+//			coefs:=FC_res(hecke,Op,pp,p);
+//			prime_data := prime_data cat [*<slope,coefs,Op,pp>*];
+//		end for;
+//		printf "***********The degree is %o; there are %o primes over p\n",Degree(Kf),r;
+		L := L cat [*<N,A>*];
+	end for;
+//	printf "   Time: %o\n",Cputime(t);
+	return L;
+end function;
+
+//-------------------------------------------------------------------------
+// integrate_power(a,j,mu)
+//
+// Input:
+//	a,j = integers
+//	mu = collection of moments
+//
+// Output:
+//	int_{a+pZ_p} (<x> - 1)^j d\mu   (<x> is x/teich(x))
+//-------------------------------------------------------------------------
+function integrate_power(a,j,mu,teich)
+	ans :=0;
+
+	for r in [0..j] do
+		ans := ans + Binomial(j,r)*(-teich[a])^(j-r)*mu[a+1,r+1];
+	end for;
+
+	return teich(a)^(-j)*ans;
+end function;
+
