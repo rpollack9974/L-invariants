@@ -84,7 +84,7 @@ end function;
 //Rho=Phi
 function Rho(MS,P,rat)
 	f:=DualVectorSpace(MS).1;
-        return(InnerProduct(f,modularpath(MS,P,rat)));
+	return(InnerProduct(f,modularpath(MS,P,rat)));
 end function;
 
 function lam(MS,j,a,m)
@@ -117,14 +117,16 @@ function form_moments_twist(MS,p,alpha,d)
 
 	k:=Weight(MS)-2;
 
-        Moments:=[];
+	Moments:=[];
 	if p ne 2 then
 	        for a in [1..p-1] do
-			print "  beginning ",a,"out of",p-1;
-	                row:=[];
+	        	if a mod 10 eq 0 then
+					print "  beginning ",a,"out of",p-1;
+				end if;
+				row:=[];
 	                for j in [0..k] do
-				ans:=1/(alpha*KroneckerSymbol(d,p))*lam_twist(MS,j,a,p,d);
-	                        Append(~row,ans);
+						ans:=1/(alpha*KroneckerSymbol(d,p))*lam_twist(MS,j,a,p,d);
+						Append(~row,ans);
 	                end for;
 	                Append(~Moments,row);
 	        end for;
@@ -155,9 +157,9 @@ function Linv_twist(MS,p,d,alpha)
 //	print mu;
 	print " done";	
 
-	print "forming error bounds";
+//	print "forming error bounds";
 	A<a>:=PowerSeriesRing(Q,k+2*p^2+1);
-	f:=A!([0] cat [(-1)^(j+1)/j : j in [1..k+2*p^2]])
+	f:=A!([0] cat [(-1)^(j+1)/j : j in [1..k+2*p^2]]);
 //	f:=0;
 //	for j in [1..k+2*p^2] do
 //		print j,k+2*p^2;
@@ -169,17 +171,17 @@ function Linv_twist(MS,p,d,alpha)
 	else
 		list:=[Valuation(Coefficient(f,j),p)+2*j-r : j in [k+1..k+2*p^2]];
 	end if;
-	print "done";
+//	print "done";
 
-	print "forming function to integrate";
+//	print "forming function to integrate";
 	R<T>:=PowerSeriesRing(Q,k+2);
 	f:=0;
 	for j in [1..k+1] do
-		print j;
+//		print j;
 		f:=f+(-1)^(j+1)/j*T^j;
 	end for;
 	f:=f*(T+1)^r;
-	print "done";
+//	print "done";
 
 	if p ne 2 then
 		Qp:=pAdicRing(p,20);
