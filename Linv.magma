@@ -159,6 +159,7 @@ function Linv_twist(MS,p,d,alpha)
 	A<a>:=PowerSeriesRing(Q,k+2*p^2+1);
 	f:=0;
 	for j in [1..k+2*p^2] do
+		print k,k+2*p^2;
 		f:=f+(-1)^(j+1)/j*a^j;
 	end for;
 	f:=f*(a+1)^r;
@@ -167,9 +168,13 @@ function Linv_twist(MS,p,d,alpha)
 	else
 		list:=[Valuation(Coefficient(f,j),p)+2*j-r : j in [k+1..k+2*p^2]];
 	end if;
+	print "done";
+
+	print "forming function to integrate";
 	R<T>:=PowerSeriesRing(Q,k+2);
 	f:=0;
 	for j in [1..k+1] do
+		print j;
 		f:=f+(-1)^(j+1)/j*T^j;
 	end for;
 	f:=f*(T+1)^r;
@@ -328,7 +333,6 @@ function Linvs(N,p,k:verbose:=false)
 		if K ne Q then
 			list:=[];
 			for r in [1..#pp] do
-				print r,#pp;
 				v:=Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]);
 				if v+Valuation(Lval,pp[r][1])/RamificationDegree(pp[r][1]) gt err_bnd then
 					v:=10000;
