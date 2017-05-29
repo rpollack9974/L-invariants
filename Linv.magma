@@ -155,6 +155,7 @@ function Linv_twist(MS,p,d,alpha)
 //	print mu;
 	print " done";	
 
+	print "forming error bounds";
 	A<a>:=PowerSeriesRing(Q,k+2*p^2+1);
 	f:=0;
 	for j in [1..k+2*p^2] do
@@ -172,6 +173,7 @@ function Linv_twist(MS,p,d,alpha)
 		f:=f+(-1)^(j+1)/j*T^j;
 	end for;
 	f:=f*(T+1)^r;
+	print "done";
 
 	if p ne 2 then
 		Qp:=pAdicRing(p,20);
@@ -305,7 +307,7 @@ function Linvs(N,p,k:verbose:=false)
 				print "****************************************************************";
 			end if;
 		end if;
-		if verbose then
+		if verbose and f ne 0 then
 			for r in [1..#pp] do
 				if AbsolutePrecision(f) lt 30 then
 					f:=qEigenform(MS,30);
@@ -347,7 +349,6 @@ function Linvs(N,p,k:verbose:=false)
 		Append(~ans,list);
 	end for;
 
-	print "HERE";
 	ans_total:=[];
 	for r in [1..#ans] do
 		for s in [1..#ans[r]] do
@@ -355,7 +356,6 @@ function Linvs(N,p,k:verbose:=false)
 		end for;
 	end for;
 
-	print "HERE2";
 	if #ans_total gt 0 then
 		sorted:=Reverse(Sort(ans_total));
 		printf "Full list of Linv vals: %o\n\n",sorted;
