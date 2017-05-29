@@ -120,7 +120,7 @@ function form_moments_twist(MS,p,alpha,d)
         Moments:=[];
 	if p ne 2 then
 	        for a in [1..p-1] do
-	//		print "  beginning ",a,"out of",p-1;
+			print "  beginning ",a,"out of",p-1;
 	                row:=[];
 	                for j in [0..k] do
 				ans:=1/(alpha*KroneckerSymbol(d,p))*lam_twist(MS,j,a,p,d);
@@ -142,15 +142,18 @@ function form_moments_twist(MS,p,alpha,d)
 	return Moments;
 end function;
 
-function Linv_twist(MS,p,d)
+function Linv_twist(MS,p,d,alpha)
 	k:=Weight(MS)-2;
 	r:=k div 2;
-	alpha:=Coefficient(qEigenform(MS,p+1),p);
+	if alpha eq 0 then
+		alpha:=Roots(HeckePolynomial(MS,p))[1][1];
+	end if;
+//	alpha:=Coefficient(qEigenform(MS,p+1),p);
 	
-//	print "forming moments";
-	mu:=form_moments_twist(MS,p,alpha*KroneckerSymbol(d,p),d);
+	print "forming moments";
+	time mu:=form_moments_twist(MS,p,alpha*KroneckerSymbol(d,p),d);
 //	print mu;
-//	print " done";	
+	print " done";	
 
 	A<a>:=PowerSeriesRing(Q,k+2*p^2+1);
 	f:=0;
@@ -195,11 +198,13 @@ end function;
 function Linv(MS,p);
 	k:=Weight(MS)-2;
 	r:=k div 2;
-//	print "Forming q-expansion...";
-	f:=qEigenform(MS,p+1);
-	alpha:=Coefficient(f,p);
+	print "Finding a_p...";
+//	time f:=qEigenform(MS,p+1);
+//	alpha:=Coefficient(f,p);
+	alpha := Roots(HeckePolynomial(MS,p))[1][1];
+	f := 0;
 
-//	print "Finding appropriate twist to use...";
+	print "Finding appropriate twist to use...";
 	d:=0;
 	found:=false;
 
@@ -247,9 +252,9 @@ function Linv(MS,p);
 		end if;
 	end while;
 
-//	print "Will use d =",d;
+	print "Will use d =",d;
 
-	Li,err_bnd,Lval:=Linv_twist(MS,p,d);
+	Li,err_bnd,Lval:=Linv_twist(MS,p,d,alpha);
 
 	return Li,f,err_bnd,Lval;
 end function;
@@ -261,6 +266,7 @@ function Linvs(N,p,k:verbose:=false)
 	ans:=[**];
 	for s in [1..#A] do
 		MS:=A[s][2];
+		print "About to compute L-inv";
 		time Li,f,err_bnd,Lval:=Linv(MS,p);	
 		K:=Parent(Li);
 		printf "%o: Degree(K)=%o; ",s,Degree(K);
@@ -320,6 +326,7 @@ function Linvs(N,p,k:verbose:=false)
 		if K ne Q then
 			list:=[];
 			for r in [1..#pp] do
+				print r,#pp;
 				v:=Valuation(Li,pp[r][1])/RamificationDegree(pp[r][1]);
 				if v+Valuation(Lval,pp[r][1])/RamificationDegree(pp[r][1]) gt err_bnd then
 					v:=10000;
@@ -340,6 +347,7 @@ function Linvs(N,p,k:verbose:=false)
 		Append(~ans,list);
 	end for;
 
+	print "HERE";
 	ans_total:=[];
 	for r in [1..#ans] do
 		for s in [1..#ans[r]] do
@@ -347,6 +355,7 @@ function Linvs(N,p,k:verbose:=false)
 		end for;
 	end for;
 
+	print "HERE2";
 	if #ans_total gt 0 then
 		sorted:=Reverse(Sort(ans_total));
 		printf "Full list of Linv vals: %o\n\n",sorted;
