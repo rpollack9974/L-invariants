@@ -209,7 +209,7 @@ function Linv(MS,p:FC:=false);
 	k:=Weight(MS)-2;
 	r:=k div 2;
 	print "Finding a_p...";
-	if not FC then
+	if FC then
 		time f:=qEigenform(MS,p+1);
 	else
 		f:=0;
