@@ -205,14 +205,17 @@ function Linv_twist(MS,p,d,alpha)
 	return Lderiv/Lval,err_bnd,Lval;
 end function;
 
-function Linv(MS,p);
+function Linv(MS,p:FC:=false);
 	k:=Weight(MS)-2;
 	r:=k div 2;
 	print "Finding a_p...";
-//	time f:=qEigenform(MS,p+1);
+	if not FC then
+		time f:=qEigenform(MS,p+1);
+	else
+		f:=0;
+	end if;
 //	alpha:=Coefficient(f,p);
 	alpha := Roots(HeckePolynomial(MS,p))[1][1];
-	f := 0;
 
 	print "Finding appropriate twist to use...";
 	d:=0;
@@ -269,7 +272,7 @@ function Linv(MS,p);
 	return Li,f,err_bnd,Lval;
 end function;
 
-function Linvs(N,p,k:verbose:=false)
+function Linvs(N,p,k:verbose:=false,FC:=false)
 	printf "Working at level N=%o, p=%o, and weight k=%o...\n",N,p,k;
 	time A:=find_padic_forms(N,k,p,1);
 	printf "...there are %o newforms (up to Galois)\n",#A;
@@ -277,7 +280,7 @@ function Linvs(N,p,k:verbose:=false)
 	for s in [1..#A] do
 		MS:=A[s][2];
 		print "About to compute L-inv";
-		time Li,f,err_bnd,Lval:=Linv(MS,p);	
+		time Li,f,err_bnd,Lval:=Linv(MS,p:FC:=FC);	
 		K:=Parent(Li);
 		printf "%o: Degree(K)=%o; ",s,Degree(K);
 		if K ne Q then
